@@ -20,6 +20,8 @@
 #include <string>
 #include <list>
 
+#include "sha256.h"
+
 //=============================================================================
 //                              USED FROM STD                                 ;
 //=============================================================================
@@ -37,7 +39,7 @@ using ::std::cout;
 //                                  CONSTANS                                  ;
 //=============================================================================
 
-const int C_sz_table = 1000;
+const int C_sz_table = 8000;
 
 enum types_of_hash {
                     E_std_hash     = 0,
@@ -45,7 +47,7 @@ enum types_of_hash {
                     E_ret_len      = 2,
                     E_sum_asci     = 3,
                     E_asci_div_len = 4,
-                    E_xor_prev     = 5, // TBA
+                    E_sha_256      = 5,
                     E_sz_enum      = 6, // size of enum
                     };
 
@@ -53,8 +55,19 @@ enum types_of_hash {
 //                                 PROTOTYPE                                  ;
 //=============================================================================
 
+size_t Hash_Std_Hash     (string elem);
 
-size_t My_Hash (string elem, const char type = '\0');
+size_t Hash_Ret_1        (string elem);
+
+size_t Hash_Ret_Len      (string elem);
+
+size_t Hash_Sum_Asci     (string elem);
+
+size_t Hash_Asci_Div_Len (string elem);
+
+size_t Hash_Sha_256      (string elem);
+
+//-----------------------------------------------------------------------------
 
 void Dump (vector <list <string>> hash_table);
 
@@ -75,6 +88,14 @@ int main ()
         hash_tables.push_back (helper);
     }
 
+    size_t (*arr_of_hash_func_ptr[E_sz_enum]) (string) = {
+                                                            &Hash_Std_Hash,
+                                                            &Hash_Ret_1,
+                                                            &Hash_Ret_Len,
+                                                            &Hash_Sum_Asci,
+                                                            &Hash_Asci_Div_Len,
+                                                            &Hash_Sha_256,
+                                                            };
 
     ifstream fin;
     fin.open ("res_text.txt");
@@ -84,7 +105,7 @@ int main ()
     {
         for (int i = 0; i < E_sz_enum; i++)
         {
-            int pos = My_Hash (word, i);
+            int pos = arr_of_hash_func_ptr[i] (word);
             hash_tables[i][pos].push_back (word);
         }
     }
@@ -96,50 +117,76 @@ int main ()
 
 //=============================================================================
 
-size_t My_Hash (string elem, const char type)  // default type = 0
+size_t Hash_Std_Hash (string elem)
 {
-    switch (type)
+    hash <string> hash_str;
+    return (hash_str (elem)) % C_sz_table;
+}
+
+//-----------------------------------------------------------------------------
+
+size_t Hash_Ret_1 (string elem)
+{
+    return 1;
+}
+
+//-----------------------------------------------------------------------------
+
+size_t Hash_Ret_Len (string elem)
+{
+    return elem.size() % C_sz_table;
+}
+
+//-----------------------------------------------------------------------------
+
+size_t Hash_Sum_Asci (string elem)
+{
+    int res = 0;
+
+    for (int i = 0; i < elem.size(); i++)
     {
-        case (E_std_hash):  // 0
-        {
-            hash <string> hash_str;
-            return hash_str (elem) % C_sz_table;
-        }
-
-        case (E_ret_1):  // 1
-        {
-            return 1;
-        }
-
-        case (E_ret_len):
-        {
-            return elem.size() % C_sz_table;
-        }
-
-        case (E_sum_asci):  // 2
-        {
-            int res = 0;
-
-            for (int i = 0; i < elem.size(); i++)
-            {
-                res += (char) elem[i];
-            }
-
-            return res % C_sz_table;
-        }
-
-        case (E_asci_div_len):  // 3
-        {
-            int res = 0;
-
-            for (int i = 0; i < elem.size(); i++)
-            {
-                res += (char) elem[i];
-            }
-
-            return (res / elem.size()) % C_sz_table;
-        }
+        res += (char) elem[i];
     }
+
+    return res % C_sz_table;
+}
+
+//-----------------------------------------------------------------------------
+
+size_t Hash_Asci_Div_Len (string elem)
+{
+    int res = 0;
+
+    for (int i = 0; i < elem.size(); i++)
+    {
+        res += (char) elem[i];
+    }
+
+    return (res / elem.size()) % C_sz_table;
+}
+
+//-----------------------------------------------------------------------------
+
+size_t Hash_Sha_256 (string elem)
+{
+    vector <unsigned long> block;
+
+    block = convert_to_binary (elem);
+
+    block = pad_to_512bits (block);
+
+    block = resize_block (block);
+
+    string res_hash = compute_hash (block);
+
+    unsigned long long res = 0;
+    for (int i = 0; i < res_hash.size(); i++)
+    {
+        res += ((unsigned long long) ((char) res_hash[i])) * (pow (2, i % 8));
+        res %= C_sz_table;
+    }
+
+    return res;
 }
 
 //=============================================================================
@@ -168,18 +215,18 @@ void Make_File (vector <vector <list <string>>> hash_tables)
 {
     FILE *fout = fopen ("output_exel.txt", "w");
 
-    fprintf (fout, "NUMBER, STD, 1, LEN, SUM, SUM/LEN, XOR\n");
+    fprintf (fout, "NUMBER, STD, 1, LEN, SUM, SUM/LEN, SHA256\n");
 
     for (int i = 0; i < C_sz_table; i++)
     {
-        fprintf (fout, "%d, ", i);
+        fprintf (fout, "%d, ", i + 1);
 
         for (int k = 0; k < E_sz_enum; k++)
         {
             fprintf (fout, "%d, ", hash_tables[k][i].size());
         }
 
-        fprintf (fout, "%d");
+        fprintf (fout, "\n");
     }
 }
 
