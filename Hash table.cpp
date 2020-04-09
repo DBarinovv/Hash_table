@@ -17,8 +17,9 @@
 #include <iostream>
 
 #include <vector>
-#include <string>
+#include <string_view>
 #include <list>
+#include <array>
 
 #include "sha256.h"
 
@@ -28,7 +29,9 @@
 
 using ::std::vector;
 using ::std::string;
+using ::std::string_view;
 using ::std::list;
+using ::std::array;
 
 using ::std::hash;
 
@@ -55,23 +58,23 @@ enum types_of_hash {
 //                                 PROTOTYPE                                  ;
 //=============================================================================
 
-size_t Hash_Std_Hash     (string elem);
+size_t Hash_Std_Hash     (string_view elem);
 
-size_t Hash_Ret_1        (string elem);
+size_t Hash_Ret_1        (string_view elem);
 
-size_t Hash_Ret_Len      (string elem);
+size_t Hash_Ret_Len      (string_view elem);
 
-size_t Hash_Sum_Asci     (string elem);
+size_t Hash_Sum_Asci     (string_view elem);
 
-size_t Hash_Asci_Div_Len (string elem);
+size_t Hash_Asci_Div_Len (string_view elem);
 
-size_t Hash_Sha_256      (string elem);
+size_t Hash_Sha_256      (string_view elem);
 
 //-----------------------------------------------------------------------------
 
-void Dump (vector <list <string>> hash_table);
+void Dump (vector <list <string_view>> hash_table);
 
-void Make_File (vector <vector <list <string>>> hash_tables);
+void Make_File (array <array <list <string_view>, C_sz_table>, E_sz_enum> hash_tables);
 
 //=============================================================================
 //=============================================================================
@@ -79,16 +82,9 @@ void Make_File (vector <vector <list <string>>> hash_tables);
 
 int main ()
 {
-    vector <vector <list <string>>> hash_tables;
+    array <array <list <string_view>, C_sz_table>, E_sz_enum> hash_tables;
 
-    vector <list <string>> helper (C_sz_table);
-
-    for (int i = 0; i < E_sz_enum; i++)
-    {
-        hash_tables.push_back (helper);
-    }
-
-    size_t (*arr_of_hash_func_ptr[E_sz_enum]) (string) = {
+    size_t (*arr_of_hash_func_ptr[E_sz_enum]) (string_view) = {
                                                             &Hash_Std_Hash,
                                                             &Hash_Ret_1,
                                                             &Hash_Ret_Len,
@@ -103,10 +99,12 @@ int main ()
     string word = "";
     while (fin >> word)
     {
+        string_view view_word = word;
+
         for (int i = 0; i < E_sz_enum; i++)
         {
-            int pos = arr_of_hash_func_ptr[i] (word);
-            hash_tables[i][pos].push_back (word);
+            int pos = arr_of_hash_func_ptr[i] (view_word);
+            hash_tables[i][pos].push_back (view_word);
         }
     }
 
@@ -117,29 +115,29 @@ int main ()
 
 //=============================================================================
 
-size_t Hash_Std_Hash (string elem)
+size_t Hash_Std_Hash (string_view elem)
 {
-    hash <string> hash_str;
+    hash <string_view> hash_str;
     return (hash_str (elem)) % C_sz_table;
 }
 
 //-----------------------------------------------------------------------------
 
-size_t Hash_Ret_1 (string elem)
+size_t Hash_Ret_1 (string_view elem)
 {
     return 1;
 }
 
 //-----------------------------------------------------------------------------
 
-size_t Hash_Ret_Len (string elem)
+size_t Hash_Ret_Len (string_view elem)
 {
     return elem.size() % C_sz_table;
 }
 
 //-----------------------------------------------------------------------------
 
-size_t Hash_Sum_Asci (string elem)
+size_t Hash_Sum_Asci (string_view elem)
 {
     int res = 0;
 
@@ -153,7 +151,7 @@ size_t Hash_Sum_Asci (string elem)
 
 //-----------------------------------------------------------------------------
 
-size_t Hash_Asci_Div_Len (string elem)
+size_t Hash_Asci_Div_Len (string_view elem)
 {
     int res = 0;
 
@@ -167,7 +165,7 @@ size_t Hash_Asci_Div_Len (string elem)
 
 //-----------------------------------------------------------------------------
 
-size_t Hash_Sha_256 (string elem)
+size_t Hash_Sha_256 (string_view elem)
 {
     vector <unsigned long> block;
 
@@ -177,7 +175,7 @@ size_t Hash_Sha_256 (string elem)
 
     block = resize_block (block);
 
-    string res_hash = compute_hash (block);
+    string_view res_hash = compute_hash (block);
 
     unsigned long long res = 0;
     for (int i = 0; i < res_hash.size(); i++)
@@ -191,13 +189,13 @@ size_t Hash_Sha_256 (string elem)
 
 //=============================================================================
 
-void Dump (vector <list <string>> hash_table)
+void Dump (vector <list <string_view>> hash_table)
 {
     for (int i = 0; i < C_sz_table; i++)
     {
         printf ("[%0.4d]: ", i);
 
-//        list <string> :: iterator iter;                                            //}
+//        list <string_view> :: iterator iter;                                            //}
 //        for (iter = hash_table[i].begin(); iter != hash_table[i].end(); iter++)    //|
 //        {                                                                          //| to see elements in each list
 //            cout << (*iter) << " || ";                                             //|
@@ -211,7 +209,7 @@ void Dump (vector <list <string>> hash_table)
 
 //=============================================================================
 
-void Make_File (vector <vector <list <string>>> hash_tables)
+void Make_File (array <array <list <string_view>, C_sz_table>, E_sz_enum> hash_tables)
 {
     FILE *fout = fopen ("output_exel.txt", "w");
 
@@ -238,12 +236,12 @@ void Make_File (vector <vector <list <string>>> hash_tables)
 
 int main ()
 {
-    vector <list <string>> hash_table (C_sz_table);
+    vector <list <string_view>> hash_table (C_sz_table);
 
     ifstream fin;
     fin.open ("res_text.txt");
 
-    string word = "";
+    string_view word = "";
     while (fin >> word)
     {
         int pos = My_Hash (word, *_TYPE TO TEST_*);
