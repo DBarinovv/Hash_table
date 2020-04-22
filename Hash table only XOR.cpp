@@ -6,7 +6,7 @@
 //|                                                     (c) Barinov Denis     ;
 //}============================================================================
 
-#include "TxLib.h"
+
 
 //=============================================================================
 //                                INCLUDES                                    ;
@@ -23,7 +23,15 @@
 #include <iostream>
 #include <algorithm>
 
-#include "List.h"
+//=============================================================================
+//                              USED FROM STD                                 ;
+//=============================================================================
+
+using ::std::string;
+using ::std::list;
+using ::std::array;
+
+using ::std::ifstream;
 
 //=============================================================================
 //                                  CONSTANS                                  ;
@@ -31,7 +39,6 @@
 
 const int C_sz_table = 700;
 
-//-----------------------------------------------------------------------------
 
 struct string_t
 {
@@ -60,32 +67,33 @@ uint32_t Hash_Xor (string_t elem);
 int main ()
 {
     int start = clock();
+
     int cnt_of_lines = 0;
     string_t *strings_arr = Make_Arr_Of_Words ("words.txt", &cnt_of_lines);
 
-    list_t hash_table[C_sz_table + 1];
-    for (int i = 0; i < C_sz_table; i++)
-    {
-        hash_table[i] = Constructor (C_size_of_array);
-    }
+//    list <char *> *hash_table[C_sz_table];
+    array <list <char *>, C_sz_table> hash_table;
 
     for (int i = 0; i < cnt_of_lines; i++)
     {
         int pos = Hash_Xor (strings_arr[i]);
-        Insert_End (&hash_table[pos], strings_arr[i].str);
+        hash_table[pos].push_back (strings_arr[i].str);
     }
 
-    char word[15] = "aaaaaaaaaaaaaa";  // 15 letters
+    char *word = (char *) calloc (15, sizeof (char)); // 15 - max len of word
 
     for (int i = 0; i < 100000000; i++)
     {
         word[i % 15] = (word[i % 15] + i) % 26 + 97;  // make random letter
         int pos = Hash_Xor ({word, 15});
 
-        Find (hash_table[pos], word);
+        std::find (hash_table[pos].begin(), hash_table[pos].end(), word);
     }
 
-    printf ("TIME = [%d]\n", clock() - start);
+    int end = clock();
+
+    #include <iostream>
+    std::cout << end - start;
 
     return 0;
 }
@@ -121,10 +129,15 @@ int Number_Of_Lines (const int sz_file, const char *buf)
 string_t *Make_Arr_Of_Words (char *file, int *cnt_of_lines)
 {
     int sz_file = Find_Sz_File (file);
+
     char *buf = (char *) calloc (sz_file + 2, sizeof (char));
+
     FILE *fin = fopen (file, "r");
+
     fread (buf, sizeof (char), sz_file, fin);
+
     *cnt_of_lines = Number_Of_Lines (sz_file, buf) + 1;
+
     string_t *strings_arr = (string_t *) calloc (*cnt_of_lines, sizeof (string_t));
 
     int pos  = -1;
@@ -182,3 +195,4 @@ uint32_t Hash_Xor (string_t elem)
 
     return res % C_sz_table;
 }
+
